@@ -1,0 +1,25 @@
+{
+  "name": "yuchinhsu-research-coworker-list",
+  "version": "1.0.0",
+  "description": "A Chrome extension that helps track and organize research collaborators from [Yu-Chin Hsu's research page](https://yuchinhsu.yolasite.com/research.php).",
+  "main": "content.js",
+  "scripts": {
+    "test": "jest --coverage"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Zhima-Mochi/yuchinhsu-research-coworker-list.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Zhima-Mochi/yuchinhsu-research-coworker-list/issues"
+  },
+  "homepage": "https://github.com/Zhima-Mochi/yuchinhsu-research-coworker-list#readme",
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "jsdom": "^26.0.0",
+    "util": "^0.12.5"
+  }
+}
