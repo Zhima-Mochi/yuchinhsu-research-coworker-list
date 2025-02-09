@@ -1,3 +1,16 @@
+/**
+ * Counts the number of unique coauthors in different sections of a webpage.
+ *
+ * @returns {Object} An object containing the counts and lists of unique coauthors in the following sections:
+ * - published: Number of unique coauthors in the "Publications" section.
+ * - working: Number of unique coauthors in the "Working Papers" section.
+ * - progress: Number of unique coauthors in the "Work in Progress" section.
+ * - total: Total number of unique coauthors across all sections.
+ * - publishedList: List of unique coauthors in the "Publications" section.
+ * - workingList: List of unique coauthors in the "Working Papers" section.
+ * - progressList: List of unique coauthors in the "Work in Progress" section.
+ * - totalList: List of unique coauthors across all sections.
+ */
 function countCoworkers() {
   const counts = {
     published: 0,
@@ -14,89 +27,76 @@ function countCoworkers() {
   function getCoauthorNamesSetInPaper(text) {
     // If "joint with" or "with" appears, it indicates there are coauthors
     const jointPattern = /joint with|with/i;
-    if (!jointPattern.test(text)) return new Set(); // Return an empty set
+    if (!jointPattern.test(text)) return new Set();
 
-    // Use regex to get text within <a> tags (matches even if href is missing)
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = text;
+
     const authors = [];
-    const regex = /<a\b[^>]*>([^<]+)<\/a>/gi;
-    let match;
-    while ((match = regex.exec(text)) !== null) {
-      authors.push(match[1].trim());
-    }
-    
-    // Handle non-linked names (split by "joint with", "with", "and", ",")
+    const anchorElements = tempDiv.querySelectorAll('a');
+    anchorElements.forEach(anchor => {
+      const t = anchor.textContent.trim();
+      if (t) authors.push(t);
+    });
+
     const nonLinkedNames = text
       .split(/joint with|with|and|,/)
-      .slice(1) // Remove the part without names
-      .map(name => name.trim())
-      .filter(name => {
-        if (!name) return false;
-        const invalidChars = ['<', '>', '[', ']'];
-        const invalidStarts = ['.', ')'];
-        if (invalidStarts.includes(name[0])) return false;
-        for (let char of invalidChars) {
-          if (name.includes(char)) return false;
-        }
-        return true;
-      });
-    
-    return new Set(authors.concat(nonLinkedNames));
+      .slice(1)
+      .map(name => name.replace(/<[^>]+>/g, '').trim())
+      .filter(name => name && !/[^a-zA-Z\s-]/.test(name)); // Ensure only valid names
+
+    return new Set([...authors, ...nonLinkedNames]);
   }
 
-  // Find different sections in the HTML content
-  const content = document.body.innerHTML;
-  
+  function extractSectionContent(pattern) {
+    const match = document.body.innerHTML.match(pattern);
+    return match && match[1] ? match[1] : "";
+  }
+
   const publishedSet = new Set();
   const workingSet = new Set();
   const progressSet = new Set();
-  
-  // Publications section
-  const publishedSection = content.match(/<p[^>]*>.*?Publications.*?<\/p>(.*?)(?=Work in Progress|$)/is);
-  if (publishedSection && publishedSection[1]) {
-    const papers = publishedSection[1].split(/<li>/).slice(1);
-    papers.forEach(paper => {
-      const namesSet = getCoauthorNamesSetInPaper(paper);
-      namesSet.forEach(name => publishedSet.add(name));
-    });
-    counts.published = publishedSet.size;
-    counts.publishedList = Array.from(publishedSet);
-  }
 
-  // Working Papers section
-  const workingSection = content.match(/Working Papers[^:]*:(.*?)(?=Work in Progress|$)/is);
-  if (workingSection && workingSection[1]) {
-    const papers = workingSection[1].split(/<li>/).slice(1);
-    papers.forEach(paper => {
-      const namesSet = getCoauthorNamesSetInPaper(paper);
-      namesSet.forEach(name => workingSet.add(name));
-    });
-    // Remove authors already in publishedSet from workingSet
-    publishedSet.forEach(name => workingSet.delete(name));
-    counts.working = workingSet.size;
-    counts.workingList = Array.from(workingSet);
-  }
+  const publishedContent = extractSectionContent(/<p[^>]*>.*?Publications.*?<\/p>\s*<ul>(.*?)<\/ul>/is);
+  publishedContent.split(/<li>/).slice(1).forEach(paper => {
+    getCoauthorNamesSetInPaper(paper).forEach(name => publishedSet.add(name));
+  });
 
-  // Work in Progress section
-  const progressSection = content.match(/Work in Progress.*?<ol>(.*?)<\/ol>/is);
-  if (progressSection && progressSection[1]) {
-    const papers = progressSection[1].split(/<li>/).slice(1);
-    papers.forEach(paper => {
-      const namesSet = getCoauthorNamesSetInPaper(paper);
-      namesSet.forEach(name => progressSet.add(name));
-    });
-    // Remove authors already in publishedSet from progressSet
-    publishedSet.forEach(name => progressSet.delete(name));
-    counts.progress = progressSet.size;
-    counts.progressList = Array.from(progressSet);
-  }
+  const workingContent = extractSectionContent(/<p[^>]*>.*?Working Papers.*?<\/p>\s*<ul>(.*?)<\/ul>/is);
+  workingContent.split(/<li>/).slice(1).forEach(paper => {
+    getCoauthorNamesSetInPaper(paper).forEach(name => workingSet.add(name));
+  });
 
-  // Union of publishedSet, workingSet, progressSet to get all unique coauthors
-  const totalSet = new Set([...publishedSet, ...workingSet, ...progressSet]);
-  counts.total = totalSet.size;
-  counts.totalList = Array.from(totalSet);
-  
+  const progressContent = extractSectionContent(/<p[^>]*>.*?Work in Progress.*?<\/p>\s*<ol>(.*?)<\/ol>/is);
+  progressContent.split(/<li>/).slice(1).forEach(paper => {
+    getCoauthorNamesSetInPaper(paper).forEach(name => progressSet.add(name));
+  });
+
+  counts.published = publishedSet.size;
+  counts.publishedList = Array.from(publishedSet);
+
+  workingSet.forEach(name => {
+    if (!publishedSet.has(name)) counts.workingList.push(name);
+  });
+  counts.working = counts.workingList.length;
+
+  progressSet.forEach(name => {
+    if (!publishedSet.has(name) && !workingSet.has(name)) counts.progressList.push(name);
+  });
+  counts.progress = counts.progressList.length;
+
+  counts.totalList = Array.from(new Set([...publishedSet, ...workingSet, ...progressSet]));
+  counts.total = counts.totalList.length;
+
   return counts;
 }
 
-// Allow popup.js to call this function
-window.countCoworkers = countCoworkers;
+
+// Export the function for testing
+if (typeof window !== 'undefined') {
+  window.countCoworkers = countCoworkers;
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { countCoworkers };
+}
