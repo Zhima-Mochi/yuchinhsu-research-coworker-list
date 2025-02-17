@@ -37,4 +37,4 @@ A Chrome extension that helps track and organize research collaborators from [Yu
 - `popup.html` - Extension popup interface
 - `popup.js` - Popup functionality
 - `content.js` - Content script for extracting information from the webpage
-- `icon.svg` - Extension icon
+- `icon128.png` - Extension icon
