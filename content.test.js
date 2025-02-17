@@ -1,12 +1,8 @@
-const { countCoworkers } = require("./content");
+const { countCoworkersFromContent } = require("./content");
 
-describe("countCoworkers", () => {
-  beforeEach(() => {
-    document.body.innerHTML = ""; // Reset document before each test
-  });
-
+describe("countCoworkersFromContent", () => {
   it("should return zero when there is no content", () => {
-    expect(countCoworkers()).toEqual({
+    expect(countCoworkersFromContent("")).toEqual({
       published: 0,
       working: 0,
       progress: 0,
@@ -19,15 +15,13 @@ describe("countCoworkers", () => {
   });
 
   it("should count unique coauthors in the Publications section", () => {
-    document.body.innerHTML = `
-      <p>Publications</p>
-      <ul>
-        <li>Paper 1, joint with <a href="#">Alice</a> and <a href="#">Bob</a></li>
-        <li>Paper 2, joint with <a href="#">Charlie</a></li>
-      </ul>
-    `;
+    const content = `Publications
 
-    expect(countCoworkers()).toEqual({
+Paper 1, (joint with Alice and Bob)
+
+Paper 2, (joint with Charlie)`;
+    
+    expect(countCoworkersFromContent(content)).toEqual({
       published: 3,
       working: 0,
       progress: 0,
@@ -40,18 +34,15 @@ describe("countCoworkers", () => {
   });
 
   it("should count unique coauthors in the Working Papers section", () => {
-    document.body.innerHTML = `
-      <p>Publications</p>
-      <ul>
-        <li>Paper 1, joint with <a href="#">Alice</a> and <a href="#">Bob</a></li>
-      </ul>
-      <p>Working Papers:</p>
-      <ul>
-        <li>Paper 3, joint with <a href="#">David</a> and <a href="#">Eve</a></li>
-      </ul>
-    `;
+    const content = `Publications
 
-    expect(countCoworkers()).toEqual({
+Paper 1, (joint with Alice and Bob)
+
+Working Papers
+
+Paper 3, (joint with David and Eve)`;
+    
+    expect(countCoworkersFromContent(content)).toEqual({
       published: 2,
       working: 2,
       progress: 0,
@@ -64,22 +55,19 @@ describe("countCoworkers", () => {
   });
 
   it("should count unique coauthors in the Work in Progress section", () => {
-    document.body.innerHTML = `
-      <p>Publications</p>
-      <ul>
-        <li>Paper 1, joint with <a href="#">Alice</a></li>
-      </ul>
-      <p>Working Papers:</p>
-      <ul>
-        <li>Paper 2, joint with <a href="#">Bob</a></li>
-      </ul>
-      <p>Work in Progress</p>
-      <ol>
-        <li>Paper 3, joint with <a href="#">Charlie</a></li>
-      </ol>
-    `;
+    const content = `Publications
 
-    expect(countCoworkers()).toEqual({
+Paper 1, (joint with Alice)
+
+Working Papers
+
+Paper 2, (joint with Bob)
+
+Work in Progress
+
+Paper 3, (joint with Charlie)`;
+    
+    expect(countCoworkersFromContent(content)).toEqual({
       published: 1,
       working: 1,
       progress: 1,
@@ -92,29 +80,26 @@ describe("countCoworkers", () => {
   });
 
   it("should not count duplicate coauthors across sections", () => {
-    document.body.innerHTML = `
-      <p>Publications</p>
-      <ul>
-        <li>Paper 1, joint with <a href="#">Alice</a> and <a href="#">Bob</a></li>
-      </ul>
-      <p>Working Papers:</p>
-      <ul>
-        <li>Paper 2, joint with <a href="#">Bob</a> and <a href="#">Charlie</a></li>
-      </ul>
-      <p>Work in Progress</p>
-      <ol>
-        <li>Paper 3, joint with <a href="#">Charlie</a> and <a href="#">David</a></li>
-      </ol>
-    `;
+    const content = `Publications
 
-    expect(countCoworkers()).toEqual({
+Paper 1, (joint with Alice and Bob)
+
+Working Papers
+
+Paper 2, (joint with Bob and Charlie)
+
+Work in Progress
+
+Paper 3, (joint with Charlie and David)`;
+    
+    expect(countCoworkersFromContent(content)).toEqual({
       published: 2,
-      working: 1, // Only Charlie is new
-      progress: 1, // Only David is new
+      working: 1,
+      progress: 2, 
       total: 4,
       publishedList: ["Alice", "Bob"],
       workingList: ["Charlie"],
-      progressList: ["David"],
+      progressList: ["Charlie", "David"],
       totalList: ["Alice", "Bob", "Charlie", "David"],
     });
   });

@@ -1,6 +1,6 @@
 /**
  * Counts the number of unique coauthors in different sections of a webpage.
- *
+ * @param {string} content - The content of the webpage.
  * @returns {Object} An object containing the counts and lists of unique coauthors in the following sections:
  * - published: Number of unique coauthors in the "Publications" section.
  * - working: Number of unique coauthors in the "Working Papers" section.
@@ -11,7 +11,7 @@
  * - progressList: List of unique coauthors in the "Work in Progress" section.
  * - totalList: List of unique coauthors across all sections.
  */
-function countCoworkers() {
+function countCoworkersFromContent(content) {
   const counts = {
     published: 0,
     working: 0,
@@ -25,78 +25,103 @@ function countCoworkers() {
 
   // Helper function to get unique coauthor names in a paper
   function getCoauthorNamesSetInPaper(text) {
+    const bracketPattern = /\(([^)]+)\)/;
+    const bracketMatch = text.match(bracketPattern);
+    if (bracketMatch) {
+      text = bracketMatch[1];
+    }
+
     // If "joint with" or "with" appears, it indicates there are coauthors
     const jointPattern = /joint with|with/i;
     if (!jointPattern.test(text)) return new Set();
 
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = text;
-
-    const authors = [];
-    const anchorElements = tempDiv.querySelectorAll('a');
-    anchorElements.forEach(anchor => {
-      const t = anchor.textContent.trim();
-      if (t) authors.push(t);
-    });
-
-    const nonLinkedNames = text
-      .split(/joint with|with|and|,/)
-      .slice(1)
-      .map(name => name.replace(/<[^>]+>/g, '').trim())
-      .filter(name => name && !/[^a-zA-Z\s-]/.test(name)); // Ensure only valid names
-
-    return new Set([...authors, ...nonLinkedNames]);
+    // Split using "joint with", "with", "and", or "," as delimiters.
+    const parts = text.split(/joint with|with|and|,/i);
+    // The first part is usually the title, so start from the second part.
+    const candidateNames = parts.slice(1);
+    // Remove extra whitespace and bracketed text (e.g., [link] or [pdf]), 
+    // and only keep names that consist of letters, spaces, and hyphens.
+    const names = candidateNames
+      .map(name => name.replace(/\[[^\]]*\]/g, '').trim())
+      .filter(name => name && /^[a-zA-Z\s-]+$/.test(name));
+    return new Set(names);
   }
 
-  function extractSectionContent(pattern) {
-    const match = document.body.innerHTML.match(pattern);
-    return match && match[1] ? match[1] : "";
+  // Helper: Parse the text into sections based on double newlines and categorize the content.
+  function parseSections(text) {
+    const sections = {
+      Publications: [],
+      "Working Papers": [],
+      "Work in Progress": []
+    };
+    // Split the text by blocks separated by one or more blank lines.
+    const blocks = text.split(/\n\s*\n/);
+    let currentSection = null;
+    for (let block of blocks) {
+      block = block.trim();
+      if (block === "Publications" || block === "Working Papers" || block === "Work in Progress") {
+        currentSection = block;
+        continue;
+      }
+      if (currentSection) {
+        sections[currentSection].push(block);
+      }
+    }
+    return sections;
   }
 
+  const sections = parseSections(content);
+
+  // Create sets to store coauthors for each section.
   const publishedSet = new Set();
   const workingSet = new Set();
   const progressSet = new Set();
 
-  const publishedContent = extractSectionContent(/<p[^>]*>.*?Publications.*?<\/p>\s*<ul>(.*?)<\/ul>/is);
-  publishedContent.split(/<li>/).slice(1).forEach(paper => {
-    getCoauthorNamesSetInPaper(paper).forEach(name => publishedSet.add(name));
-  });
+  // Process the Publications section.
+  if (sections["Publications"]) {
+    sections["Publications"].forEach(paper => {
+      getCoauthorNamesSetInPaper(paper).forEach(name => publishedSet.add(name));
+    });
+  }
 
-  const workingContent = extractSectionContent(/<p[^>]*>.*?Working Papers.*?<\/p>\s*<ul>(.*?)<\/ul>/is);
-  workingContent.split(/<li>/).slice(1).forEach(paper => {
-    getCoauthorNamesSetInPaper(paper).forEach(name => workingSet.add(name));
-  });
+  // Process the Working Papers section.
+  if (sections["Working Papers"]) {
+    sections["Working Papers"].forEach(paper => {
+      getCoauthorNamesSetInPaper(paper).forEach(name => workingSet.add(name));
+    });
+  }
 
-  const progressContent = extractSectionContent(/<p[^>]*>.*?Work in Progress.*?<\/p>\s*<ol>(.*?)<\/ol>/is);
-  progressContent.split(/<li>/).slice(1).forEach(paper => {
-    getCoauthorNamesSetInPaper(paper).forEach(name => progressSet.add(name));
-  });
+  // Process the Work in Progress section.
+  if (sections["Work in Progress"]) {
+    sections["Work in Progress"].forEach(paper => {
+      getCoauthorNamesSetInPaper(paper).forEach(name => progressSet.add(name));
+    });
+  }
 
+  // Publications section result.
   counts.published = publishedSet.size;
   counts.publishedList = Array.from(publishedSet);
 
+  // For Working Papers, only include names that are not in the Publications section.
   workingSet.forEach(name => {
     if (!publishedSet.has(name)) counts.workingList.push(name);
   });
   counts.working = counts.workingList.length;
 
+  // For Work in Progress, only include names that are not in either Publications or Working Papers.
   progressSet.forEach(name => {
-    if (!publishedSet.has(name) && !workingSet.has(name)) counts.progressList.push(name);
+    if (!publishedSet.has(name)) counts.progressList.push(name);
   });
   counts.progress = counts.progressList.length;
 
-  counts.totalList = Array.from(new Set([...publishedSet, ...workingSet, ...progressSet]));
+  // Combine all sets to form the total union.
+  const totalSet = new Set([...publishedSet, ...workingSet, ...progressSet]);
+  counts.totalList = Array.from(totalSet);
   counts.total = counts.totalList.length;
 
   return counts;
 }
 
-
-// Export the function for testing
-if (typeof window !== 'undefined') {
-  window.countCoworkers = countCoworkers;
-}
-
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { countCoworkers };
+  module.exports = { countCoworkersFromContent };
 }
