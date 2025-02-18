@@ -25,10 +25,10 @@ function countCoworkersFromContent(content) {
 
   // Helper function to get unique coauthor names in a paper
   function getCoauthorNamesSetInPaper(text) {
-    const bracketPattern = /\(([^)]+)\)/;
-    const bracketMatch = text.match(bracketPattern);
-    if (bracketMatch) {
-      text = bracketMatch[1];
+    const bracketPattern = /\(([^)]+)\)/g;
+    const bracketMatch =  [...text.matchAll(bracketPattern)];
+    if (bracketMatch.length > 0) {
+      text = bracketMatch[bracketMatch.length - 1][1];
     }
 
     // If "joint with" or "with" appears, it indicates there are coauthors

@@ -17,7 +17,7 @@ describe("countCoworkersFromContent", () => {
   it("should count unique coauthors in the Publications section", () => {
     const content = `Publications
 
-Paper 1, (joint with Alice G. Lucky and Bob Shark)
+Paper 1 (high), (joint with Alice G. Lucky and Bob Shark)
 
 Paper 2, (joint with Charlie)`;
     
