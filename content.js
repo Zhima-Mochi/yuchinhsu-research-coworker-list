@@ -43,7 +43,7 @@ function countCoworkersFromContent(content) {
     // and only keep names that consist of letters, spaces, and hyphens.
     const names = candidateNames
       .map(name => name.replace(/\[[^\]]*\]/g, '').trim())
-      .filter(name => name && /^[a-zA-Z\s-]+$/.test(name));
+      .filter(name => name && /^[a-zA-Z\s\.-]+$/.test(name));
     return new Set(names);
   }
 
