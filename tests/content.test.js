@@ -1,4 +1,4 @@
-const { countCoworkersFromContent } = require("./content");
+const { countCoworkersFromContent } = require("../app/content");
 
 describe("countCoworkersFromContent", () => {
   it("should return zero when there is no content", () => {
