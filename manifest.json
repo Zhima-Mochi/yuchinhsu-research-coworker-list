@@ -4,6 +4,7 @@
   "version": "1.0",
   "description": "Counts coauthors from research papers on Hsu's academic website",
   "permissions": ["activeTab", "scripting"],
+  "host_permissions": ["https://yuchinhsu.yolasite.com/*"],
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
